@@ -27,7 +27,23 @@ SUPPORTED_INTENTS = [
     "set_reminder",
     "set_busy",
     "web_search",
+    "multi_step",
+    "browse",
+    "login",
     "general_chat",
+]
+
+# Keyword rules for fast intent matching without LLM
+# Each entry is (list_of_keywords, intent_name)
+_KEYWORD_RULES: list[tuple[list[str], str]] = [
+    # Multi-step / automation commands (detected by compound instructions)
+    (["and then", "after that", "then", "next"], "multi_step"),
+    # Browse/navigate
+    (["go to", "navigate to", "visit", "browse to"], "browse"),
+    # Search on web
+    (["search on youtube", "search on google", "search for", "look up on"], "web_search"),
+    # Login
+    (["login to", "log in to", "sign in to", "sign into"], "login"),
 ]
 
 _SYSTEM_PROMPT = """You are an intent parser for the Nexa AI assistant.
@@ -83,6 +99,12 @@ class IntentParser:
             Dict with at minimum an "action" key, e.g.:
             {"action": "call", "target": "Ram", "message": "boss is busy"}
         """
+        # Fast path: keyword matching (no LLM call needed)
+        keyword_result = self._keyword_match(command)
+        if keyword_result:
+            logger.info(f"🎯 Intent (keyword): {keyword_result}")
+            return keyword_result
+
         prompt = _SYSTEM_PROMPT.replace("{command}", command)
         raw = llm.ask(prompt)
 
@@ -102,6 +124,19 @@ class IntentParser:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    def _keyword_match(self, command: str) -> dict[str, Any] | None:
+        """Fast keyword-based intent matching without calling the LLM."""
+        lower = command.lower()
+        for keywords, action in _KEYWORD_RULES:
+            if any(kw in lower for kw in keywords):
+                result: dict[str, Any] = {"action": action}
+                if action in ("multi_step", "browse", "login"):
+                    result["target"] = command  # Pass full command to task_chain
+                elif action == "web_search":
+                    result["target"] = command
+                return result
+        return None
 
     def _extract_json(self, text: str) -> dict[str, Any] | None:
         """Try to extract the first JSON object from a raw LLM response."""
