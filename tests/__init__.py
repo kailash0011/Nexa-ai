@@ -1,0 +1,3 @@
+"""
+Nexa AI — Tests package
+"""
