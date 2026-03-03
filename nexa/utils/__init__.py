@@ -1,0 +1,3 @@
+"""
+Nexa AI — Utils package
+"""

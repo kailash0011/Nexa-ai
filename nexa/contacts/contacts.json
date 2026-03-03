@@ -1,0 +1,12 @@
+{
+  "Ram": {
+    "phone": "+919876500001",
+    "relation": "friend",
+    "platforms": ["phone", "whatsapp"]
+  },
+  "Sandhya": {
+    "phone": "+919876500002",
+    "relation": "friend",
+    "platforms": ["phone", "whatsapp", "messenger"]
+  }
+}
