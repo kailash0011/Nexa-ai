@@ -16,30 +16,31 @@ class TestSpeaker:
     def test_speak_prints_text(self, capsys):
         """speak() always prints to stdout even without pyttsx3."""
         speaker = Speaker()
-        speaker._engine = None  # force no TTS engine
+        speaker._tts_available = False  # force no TTS engine
         speaker.speak("Hello Kailash!")
         captured = capsys.readouterr()
         assert "Hello Kailash!" in captured.out
 
     def test_speak_with_mock_engine(self):
-        """speak() calls engine.say and runAndWait when engine is present."""
+        """speak() creates a fresh engine, calls say and runAndWait, then stop."""
         mock_engine = MagicMock()
         speaker = Speaker()
-        speaker._engine = mock_engine
+        speaker._tts_available = True
 
-        with patch("nexa.voice.speaker._PYTTSX3_AVAILABLE", True):
+        with patch.object(speaker, "_create_engine", return_value=mock_engine):
             speaker.speak("Test speech", blocking=True)
 
         mock_engine.say.assert_called_once_with("Test speech")
         mock_engine.runAndWait.assert_called_once()
+        mock_engine.stop.assert_called()
 
     def test_speak_nonblocking_does_not_block(self):
         """Non-blocking speak returns immediately."""
         mock_engine = MagicMock()
         speaker = Speaker()
-        speaker._engine = mock_engine
+        speaker._tts_available = True
 
-        with patch("nexa.voice.speaker._PYTTSX3_AVAILABLE", True):
+        with patch.object(speaker, "_create_engine", return_value=mock_engine):
             # Should return without raising
             speaker.speak("Background speech", blocking=False)
 
