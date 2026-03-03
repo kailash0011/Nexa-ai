@@ -5,7 +5,7 @@ websockets
 SpeechRecognition
 pyttsx3
 gTTS
-pyautogui
+pyautogui>=0.9.54
 psutil
 pywhatkit
 selenium
@@ -13,6 +13,8 @@ webdriver-manager
 python-dotenv
 sqlalchemy
 pydantic
-pyperclip
+pyperclip>=1.8.2
+Pillow>=10.0.0
+opencv-python>=4.8.0
 schedule
 pytest

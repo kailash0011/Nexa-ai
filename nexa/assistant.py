@@ -19,6 +19,7 @@ from nexa.services.app_launcher import app_launcher
 from nexa.services.file_manager import file_manager
 from nexa.services.scheduler import scheduler
 from nexa.services.system_monitor import system_monitor
+from nexa.services.task_chain import task_chain
 from nexa.utils.logger import get_logger
 from nexa.voice.speaker import get_speaker
 
@@ -147,7 +148,19 @@ class NexaAssistant:
             return self._handle_set_busy(duration)
 
         if action == "web_search":
-            return self._handle_web_search(target or raw_command)
+            return self._handle_task_chain(target or raw_command)
+
+        if action in ("multi_step", "browse", "login"):
+            return self._handle_task_chain(target or raw_command)
+
+        # If command looks like an instruction, try task_chain before general chat
+        instruction_verbs = [
+            "open", "go to", "search", "click", "type", "login", "send",
+            "create", "download", "navigate", "visit", "close", "copy",
+            "paste", "move", "delete",
+        ]
+        if any(verb in raw_command.lower() for verb in instruction_verbs):
+            return self._handle_task_chain(raw_command)
 
         # Default: general chat
         return self._handle_general_chat(raw_command)
@@ -251,6 +264,10 @@ class NexaAssistant:
         url = f"https://www.google.com/search?q={query.replace(' ', '+')}"
         webbrowser.open(url)
         return f"🌐 Searching the web for: '{query}'"
+
+    def _handle_task_chain(self, command: str) -> str:
+        """Handle complex multi-step commands using task chain AI agent."""
+        return task_chain.execute_instruction(command, speak_fn=self._speak)
 
     def _handle_general_chat(self, command: str) -> str:
         # Use conversation history for context
